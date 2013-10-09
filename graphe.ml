@@ -2,8 +2,8 @@
 
 (*
     val tab_VNV : bool array 
-    le true signifie que le sommet est non visite, le false qu'il est visite,
-    par defaut tous les sommets sont visites.
+    le true signifie que le sommet est non visité, le false qu'il est visité,
+    par defaut tous les sommets sont non visités.
 *)
 let init_tab_VNV () = (Array.make 13 true) ;;
 
