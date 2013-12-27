@@ -18,7 +18,7 @@ let init_lst (taille_max : int) (elem_max : int) (graph_pred : int graph) (s : i
   let lst = ref [] in 
   let taille = Random.int (taille_max / 2) in 
   for i = 0 to taille do 
-    let aux = Random.int elem_max in 
+    let aux = Random.int (elem_max - 1) + 1 in (* no arc on 0 -> for topological list *)
       if (aux = s) || (List.exists (fun a -> aux = a) (!lst))
       then () 
       else ( begin
@@ -29,6 +29,7 @@ let init_lst (taille_max : int) (elem_max : int) (graph_pred : int graph) (s : i
   !lst ;;
 
 (*
+ * Return two graph, the graph can have circuit
  * Warning : they can't be a node with an arc on inself.
  *)
 
@@ -39,6 +40,10 @@ let init_graph (taille : int) : (int graph * int graph) =
     graph_succ.(i) <- init_lst taille taille graph_pred i
   done ;
   (graph_pred, graph_succ) ;;
+
+(*
+ * Return a valued graph
+ *)
 
 let init_graph_v (graph_succ : int graph) : (int graph_valued) =
   let taille = Array.length graph_succ in
@@ -52,6 +57,29 @@ let init_graph_v (graph_succ : int graph) : (int graph_valued) =
     graph_succ_v.(i) <- List.map (fun x -> (x, (Random.int taille))) graph_succ.(i) 
   done ;
   graph_succ_v ;;
+
+let init_lst_tree (taille_max : int) (elem_max : int) (graph_pred : int graph) (s : int) 
+: int list = 
+  let lst = ref [] in 
+  let taille = Random.int (taille_max / 2) in 
+  for i = 0 to taille do 
+    let aux = Random.int (elem_max - 1) + 1 in (* no arc on 0 -> for topological list *)
+      if (aux = s) || (List.exists (fun a -> aux = a) (!lst)) || (aux < s)
+      then () 
+      else ( begin
+               lst := aux::(!lst) ;
+               graph_pred.(aux) <- s::(graph_pred.(aux)) ;
+             end )
+  done ;
+  !lst ;;
+
+let init_tree (taille : int) : (int graph * int graph) =
+  let graph_pred = Array.make taille [] in 
+  let graph_succ = Array.make taille [] in 
+  for i = 0 to (taille - 1) do 
+    graph_succ.(i) <- init_lst_tree taille taille graph_pred i
+  done ;
+  (graph_pred, graph_succ) ;;
 
 (* ========================================================================= *)
 (*                          FONCTIONS DE PARCOURS                            *)
@@ -177,7 +205,48 @@ let bellman_ford (graph_succ : 'a graph_valued) (root : 'a) : ('a arc) list =
   let red_arc_lst = ref [] in 
   for i = 0 to (n - 1) do 
     match d.(i) with
-    | (_, Some x) -> red_arc_lst := (x, i)::(!red_arc_lst)
-    | (_, None)   -> ()
+    | (c, Some x) when c < 50 -> red_arc_lst := (x, i)::(!red_arc_lst)
+    | _           -> ()
   done ;
   !red_arc_lst ;;
+
+(*
+ * They can't be circuit
+ *)
+
+let rec construct_list_topo (graph_pred : int graph) (graph_succ : int graph) 
+(lst : int list) : int list =
+  try
+  let (s, graph_pred) = Tools.choose_less_pred graph_pred graph_succ in
+    (construct_list_topo graph_pred graph_succ (s::lst)) 
+  with Tools.Empty_Graph -> lst 
+
+(*
+ * Warning : the graph can't have circuit.
+ *)
+
+let bellman (lst_topo : 'a list) (graph_succ_v : 'a graph_valued) (graph_pred : 'a graph) (graph_succ : 'a graph) (root : 'a) : ('a arc) list =
+  if (lst_topo = []) || (List.hd lst_topo) <> 0 
+  then failwith "s has predecessors"
+  else ( let n = Array.length graph_succ in
+         let d = Array.make n (100, None) in (* +∞ *)
+         let _ = d.(root) <- (0, None) in
+         for x = 0 to n - 1 do
+           let lst_succ = (Tools.find_succ_topo graph_succ lst_topo x) in
+           let lst_succ_cost = ref (Tools.assoc_cost_lst lst_succ graph_succ_v x) in
+           while !lst_succ_cost <> [] do
+             let (y, c) = (List.hd (!lst_succ_cost)) in
+             let (dy, _) = d.(y) in 
+             let (dx, _) = d.(x) in
+             let _ = if dy > dx + c 
+                     then d.(y) <- ((dx + c), (Some x)) in
+               lst_succ_cost := (List.tl (!lst_succ_cost)) ;
+          done ;
+         done ;
+         let red_arc_lst = ref [] in 
+         for i = 0 to (n - 1) do 
+           match d.(i) with
+           | (_, Some x) -> red_arc_lst := (x, i)::(!red_arc_lst)
+           | _           -> ()
+         done ;
+         !red_arc_lst ) ;;

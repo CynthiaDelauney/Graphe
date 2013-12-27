@@ -2,13 +2,14 @@
 type 'a arc = 'a * 'a ;;
 type 'a graph = ('a list) array ;;
 type 'a graph_valued = (('a * int) list) array ;;
+
 exception Close_Node 
 exception Empty_Graph
 
 let is_not_visited (node : 'a) tab_VNV  : bool = tab_VNV.(node) ;;
 
 (* 
- * return true if the node got more than one neighbor who's not visited 
+ * Return true if the node got more than one neighbor who's not visited. 
  *)
 
 let got_neighbor_nv (x : 'a) (graph_succ : 'a graph) tab_VNV  : bool =
@@ -23,7 +24,7 @@ let got_neighbor_nv (x : 'a) (graph_succ : 'a graph) tab_VNV  : bool =
     (aux list_nodes_adj tab_VNV) ;;
 
 (*
- * return the first node not visited in the node adjacent list of "n"
+ * Return the first node not visited in the node adjacent list of "n".
  *)
 
 let choose_neighbor_nv (n : int) (graph_succ : 'a graph) tab_VNV : 'a =
@@ -75,19 +76,29 @@ let choose_less_pred (graph_pred : int graph) (graph_succ : int graph)
   let _ = new_graph_pred.(!i) <- [-1] in
     (!i, new_graph_pred) ;;
 
-(*
- * They can't be circuit
- *)
-
-let rec construct_list_topo (graph_pred : int graph) (graph_succ : int graph) 
-(lst : int list) : int list =
-  try
-  let (s, graph_pred) = choose_less_pred graph_pred graph_succ in
-    (construct_list_topo graph_pred graph_succ (s::lst)) 
-  with Empty_Graph -> lst 
-
 let rec get_lst_arc (graph : 'a graph_valued) (index : int) : ('a * 'a * int) list =
   if index >= Array.length graph 
   then []
   else (List.append (List.map (fun (x, c) -> (index, x, c)) graph.(index)) 
                     (get_lst_arc graph (index + 1))) ;;
+
+(*
+ * Return the successor list of "x" in the topological list.
+ *)  
+
+let rec find_succ_topo (graph_succ : 'a graph) (lst_topo : 'a list) (x : 'a) : 'a list =
+  if lst_topo = [] 
+  then []
+  else ( if (List.hd lst_topo) = x
+         then List.filter (fun e -> (List.mem e graph_succ.(x))) lst_topo
+         else find_succ_topo graph_succ (List.tl lst_topo) x ) ;;
+
+let assoc_cost (e : 'a) (lst_cost : ('a * int) list) : ('a * int) =
+  (e, List.assoc e lst_cost) ;; 
+
+let rec assoc_cost_lst (lst_succ : 'a list) (graph_succ_v : 'a graph_valued) (x :'a) : ('a * int) list =
+  if lst_succ = []
+  then []
+  else ( let lst_cost = graph_succ_v.(x) in (* ('a , int) list *)
+           (assoc_cost (List.hd lst_succ) lst_cost)::(assoc_cost_lst (List.tl lst_succ) graph_succ_v x) ) ;;
+

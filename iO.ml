@@ -4,11 +4,16 @@
 
 type 'a arc = 'a * 'a ;;
 
-let output_int (oc : out_channel) (x : int) =
-  output_string oc (string_of_int x) ;;
 
 let rec is_red_arc ((a, b) : 'a arc) (lst : ('a arc) list) : bool =
    List.exists (fun (a', b') -> (a = a' && b = b')) lst
+
+(* ========================================================================= *)
+(*                                 OUTPUT                                    *)
+(* ========================================================================= *)
+
+let output_int (oc : out_channel) (x : int) =
+  output_string oc (string_of_int x) ;;
 
 let rec output_node (oc : out_channel) (lst_red_arc : ('a arc) list) (node : 'a) 
 (output_elem : out_channel -> 'a -> unit) : ('a list) -> unit = function
@@ -57,6 +62,25 @@ let output_graph (oc : out_channel) ?graph ?graph_v (lst_red_arc : ('a arc) list
   | Some a, Some b -> failwith "Deux graphes sont passés en paramètre" in
   output_string oc "0 [label=\"départ\"];\n" ;
   output_string oc "}" ;;
+
+let output_int = function oc -> function x ->
+    output_string oc (string_of_int x) ;;
+
+let output_float oc f = output_string oc (string_of_float f) ;;
+
+let output_ligne oc i e1 e2 =
+    begin 
+        output_int oc i ;
+        output_string oc " " ;
+        output_float oc e1 ;
+        output_string oc " " ;
+        output_float oc e2 ;
+        output_string oc "\n"
+    end ;;
+
+(* ========================================================================= *)
+(*                             PRINT FUNTIONS                                *)
+(* ========================================================================= *)
 
 let print_pair (print_elem : 'a -> unit) (x : 'a * 'a) : unit =
   begin 
@@ -107,3 +131,10 @@ let print_list (print_elem : 'a -> unit) (lst : 'a list)  =
             | a::q  -> let _ = (print_elem a ; print_string "; ") in (aux q) 
         in 
             (aux lst)) ;;
+
+let draw_graph graph_v (lst_red_arc : ('a arc) list) =
+  let oc = open_out "graph.dot" in
+    output_string oc "digraph G {" ;
+    output_string oc "\n" ;
+    output_graph oc ~graph_v:graph_v lst_red_arc output_int ;
+    close_out oc ;;
