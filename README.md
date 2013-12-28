@@ -5,7 +5,7 @@
 ### Compilation
 
 ```
-ocamlopt deQueue.ml tools.ml iO.ml graph.ml -o main main.ml
+ocamlc deQueue.ml tools.ml iO.ml graph.ml dialogue.ml -o main main.ml
 ```
 
 ### Usage
@@ -16,7 +16,7 @@ ocamlopt deQueue.ml tools.ml iO.ml graph.ml -o main main.ml
 ```
 
 ```
-./main -graphe N
+./main -graph
 ```
 
 ### Gnuplot

@@ -81,6 +81,17 @@ let init_tree (taille : int) : (int graph * int graph) =
   done ;
   (graph_pred, graph_succ) ;;
 
+let generer_graphes (n : int) : ('a graph * 'a graph * 'a graph_valued) =
+  let _ = print_string "Voulez vous générer un graphe :\n(0) : avec circuit\n(1) : sans circuit ?\n" in 
+  let tree = read_int () in
+  let (graph_pred, graph_succ) = if tree = 1
+          then init_tree n
+          else init_graph n in
+  let graph_v = init_graph_v graph_succ in
+  let _ = Printf.printf "\n\nTableau des listes d'adjacences : (sommets successeurs * coût) list : " in
+  let _ = IO.print_array graph_v (IO.print_list (IO.print_pair print_int)) in
+    (graph_pred, graph_succ, graph_v) ;;
+
 (* ========================================================================= *)
 (*                          FONCTIONS DE PARCOURS                            *)
 (* ========================================================================= *)
@@ -183,7 +194,7 @@ let bellman_ford (graph_succ : 'a graph_valued) (root : 'a) : ('a arc) list =
       let (dx, _) = d.(x) in
 
 (* FIXME (2) : 
- * Quand dy et dx sont à +∞ et c(x, y) est nagatif -> c'est un arc rouge 
+ * Quand dy et dx sont à +∞ et c(x, y) est negatif -> c'est un arc rouge 
  * alors que ces sommets ne sont pas forcement accessibles pas le sommet root 
  * Solutions : calcule des composantes fortement connexes, ...
  *)
@@ -217,18 +228,28 @@ let bellman_ford (graph_succ : 'a graph_valued) (root : 'a) : ('a arc) list =
 let rec construct_list_topo (graph_pred : int graph) (graph_succ : int graph) 
 (lst : int list) : int list =
   try
-  let (s, graph_pred) = Tools.choose_less_pred graph_pred graph_succ in
+  let (s, graph_pred) = Tools.choose_no_pred graph_pred graph_succ in
     (construct_list_topo graph_pred graph_succ (s::lst)) 
-  with Tools.Empty_Graph -> lst 
+  with Tools.Has_Pred -> lst 
 
+(*
+ * Return a topological list with s1 = s
+ *)
+
+let construct_list_topo_from (s : 'a) (graph_pred : int graph) (graph_succ : int graph) 
+(lst : int list) : int list =
+   if graph_pred.(s) <> [] 
+   then raise Tools.Has_Pred
+   else ( let new_graph_pred = Array.copy graph_pred in
+          let _ = Tools.delete_node_from_graph (graph_succ.(s)) s new_graph_pred in 
+            construct_list_topo new_graph_pred graph_succ [s] ) ;;
+ 
 (*
  * Warning : the graph can't have circuit.
  *)
 
 let bellman (lst_topo : 'a list) (graph_succ_v : 'a graph_valued) (graph_pred : 'a graph) (graph_succ : 'a graph) (root : 'a) : ('a arc) list =
-  if (lst_topo = []) || (List.hd lst_topo) <> 0 
-  then failwith "s has predecessors"
-  else ( let n = Array.length graph_succ in
+  let n = Array.length graph_succ in
          let d = Array.make n (100, None) in (* +∞ *)
          let _ = d.(root) <- (0, None) in
          for x = 0 to n - 1 do
@@ -249,7 +270,7 @@ let bellman (lst_topo : 'a list) (graph_succ_v : 'a graph_valued) (graph_pred : 
            | (_, Some x) -> red_arc_lst := (x, i)::(!red_arc_lst)
            | _           -> ()
          done ;
-         !red_arc_lst ) ;;
+         !red_arc_lst  ;;
 (*
  * dx have to be positive for all x
  *)

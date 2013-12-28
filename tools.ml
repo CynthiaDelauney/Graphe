@@ -5,6 +5,7 @@ type 'a graph_valued = (('a * int) list) array ;;
 
 exception Close_Node 
 exception Empty_Graph
+exception Has_Pred
 
 let is_not_visited (node : 'a) tab_VNV  : bool = tab_VNV.(node) ;;
 
@@ -56,13 +57,21 @@ let rec delete_elem_from_lst (elem : int) (lst : 'a list) (graph : 'a graph)
           graph.(x) <- (List.filter (fun e -> e <> elem) graph.(x)) ; 
           delete_elem_from_lst elem (List.tl lst) graph) ;;
 
-let choose_less_pred (graph_pred : int graph) (graph_succ : int graph) 
+let delete_node_from_graph (lst_succ : 'a list) (s : 'a) (graph :'a graph) : unit =
+  let _ = delete_elem_from_lst s lst_succ graph in
+    graph.(s) <- [-1] ;;
+
+(*
+ * Choose a node with no predecessor ans delete it from the graph
+ *)
+
+let choose_no_pred (graph_pred : int graph) (graph_succ : int graph) 
 : (int * int graph) =
   let length = Array.length graph_pred in
   let new_graph_pred = Array.copy graph_pred in
   let aux = Array.make length 0 in 
-  for i = 0 to (length - 1) do 
-    if graph_pred.(i) = [-1] 
+  for i = 0 to (length - 1) do
+    if graph_pred.(i) = [-1]  (* -1 for delete node *)
     then aux.(i) <- 100 (* +∞ *)
     else aux.(i) <- List.length graph_pred.(i)
   done ;
@@ -70,10 +79,8 @@ let choose_less_pred (graph_pred : int graph) (graph_succ : int graph)
   while (!i < length) && (aux.(!i) <> 0) do
     i := 1 + (!i)
   done ;
-  let _ = if (!i = length) then raise Empty_Graph in
-  let lst_succ = graph_succ.(!i) in 
-  let _ = delete_elem_from_lst (!i) lst_succ new_graph_pred in
-  let _ = new_graph_pred.(!i) <- [-1] in
+  let _ = if (!i = length) then raise Has_Pred in
+  let _ = delete_node_from_graph (graph_succ.(!i)) !i new_graph_pred in
     (!i, new_graph_pred) ;;
 
 let rec get_lst_arc (graph : 'a graph_valued) (index : int) : ('a * 'a * int) list =
@@ -101,6 +108,10 @@ let rec assoc_cost_lst (lst_succ : 'a list) (graph_succ_v : 'a graph_valued) (x 
   then []
   else ( let lst_cost = graph_succ_v.(x) in (* ('a , int) list *)
            (assoc_cost (List.hd lst_succ) lst_cost)::(assoc_cost_lst (List.tl lst_succ) graph_succ_v x) ) ;;
+
+(*
+ * Return the node like d.(node) is the minimum
+ *)
 
 let choose_open_dmin (d : (int * bool * 'a option) array) : 'a =
   let imin = ref 100 in
