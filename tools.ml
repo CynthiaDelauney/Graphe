@@ -102,3 +102,19 @@ let rec assoc_cost_lst (lst_succ : 'a list) (graph_succ_v : 'a graph_valued) (x 
   else ( let lst_cost = graph_succ_v.(x) in (* ('a , int) list *)
            (assoc_cost (List.hd lst_succ) lst_cost)::(assoc_cost_lst (List.tl lst_succ) graph_succ_v x) ) ;;
 
+let choose_open_dmin (d : (int * bool * 'a option) array) : 'a =
+  let imin = ref 100 in
+  let n = Array.length d in
+  let i = ref 0 in
+  while !imin = 100 && !i < n do
+    let (_, b, _) = d.(!i) in
+      if b then imin := !i 
+      else i := !i + 1
+  done ;
+  for j = !i + 1 to n - 1 do 
+    let (dx, b, _) = d.(j) in
+    let (dmin, _, _) = d.(!imin) in
+      if (dx < dmin) && b 
+      then imin :=  j
+  done ;
+  if !imin = 100 then raise Close_Node else !imin ;

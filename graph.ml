@@ -110,7 +110,7 @@ let rec breadth_first_search (graph_succ : 'a graph) (file_nodes : int DeQueue.s
 (*
 
 (* 
- * Updated the stack, the closed node are deleted.
+ * Update the stack, the closed node are deleted.
  *)
 
 let rec maj_pile tab_VNV graph_succ = function
@@ -250,3 +250,36 @@ let bellman (lst_topo : 'a list) (graph_succ_v : 'a graph_valued) (graph_pred : 
            | _           -> ()
          done ;
          !red_arc_lst ) ;;
+(*
+ * dx have to be positive for all x
+ *)
+
+let dijkstra (graph_succ_v : 'a graph_valued) (root : 'a) : ('a arc) list =
+  let n = Array.length graph_succ_v in
+  let d = Array.make n (100, false, None) in (* +∞ *)
+  let _ = d.(root) <- (0, true, None) in 
+  let i = ref 0 in 
+  while !i < n do 
+    try
+      let x = Tools.choose_open_dmin d in 
+      let lst_succ = ref graph_succ_v.(x) in 
+      while !lst_succ <> [] do 
+        let (y, c) = (List.hd (!lst_succ)) in 
+        let (dy, _, _) = d.(y) in 
+        let (dx, _, _) = d.(x) in 
+        let _ = if dy > dx + c 
+                then d.(y) <- ((dx + c), true, (Some x)) in 
+        lst_succ := (List.tl (!lst_succ)) ;
+      done ;
+      let _ = i := !i + 1 in 
+      let (dx, _, fx) = d.(x) in
+        d.(x) <- (dx, false, fx) ;
+    with Tools.Close_Node -> i := n
+  done ;
+  let red_arc_lst = ref [] in 
+    for y = 0 to (n - 1) do 
+      match d.(y) with
+      | (_, _,Some x) -> red_arc_lst := (x, y)::(!red_arc_lst)
+      | _             -> ()
+    done ;
+    !red_arc_lst ;;

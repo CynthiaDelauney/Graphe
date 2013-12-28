@@ -68,13 +68,15 @@ let output_int = function oc -> function x ->
 
 let output_float oc f = output_string oc (string_of_float f) ;;
 
-let output_ligne oc i e1 e2 =
+let output_ligne oc i e1 e2 e3 =
     begin 
         output_int oc i ;
         output_string oc " " ;
         output_float oc e1 ;
         output_string oc " " ;
         output_float oc e2 ;
+        output_string oc " " ;
+        output_float oc e3 ;
         output_string oc "\n"
     end ;;
 
