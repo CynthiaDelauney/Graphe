@@ -13,24 +13,26 @@
 let () = 
   let _ = Random.self_init () in
 
+  let oriented = false in
+
   ( match Sys.argv.(1) with
     | "-graph"  -> Dialogue.dialogue ()
  
     | "-courbe" -> let n = (int_of_string Sys.argv.(2)) in
                    let oc = open_out "donnees.dat" in 
                    for j = 2 to n do
-                     let _ = Printf.printf "#%d\n" j in
-                     let _ = flush stdout in
+                     Printf.printf "#%d\n" j ;
+                     flush stdout ;
                      let moy_bellman_ford = ref 0. and moy_bellman = ref 0. and moy_dijkstra = ref 0. in
                      for i = 1 to 50 do
                        let taille = j in 
-                       let (graph_pred, graph_succ) = Graph.init_tree taille in
-                       let graph_v = Graph.init_graph_v graph_succ in
+                       let (graph_pred, graph_succ) = Graph.init_tree oriented taille in
+                       let graph_v = Graph.init_graph_v oriented graph_succ in
 
-                       let n1 = Sys.time () in
-                           
-                       let _ = Graph.bellman_ford graph_v 0 in let n2 = Sys.time () in 
-                       let _ = moy_bellman_ford := !moy_bellman_ford +. (n2 -. n1) in
+                       let n1 = Sys.time () in   
+                       let _ = Graph.bellman_ford graph_v 0 in 
+                       let n2 = Sys.time () in 
+                       moy_bellman_ford := !moy_bellman_ford +. (n2 -. n1) ;
                        let n5 = Sys.time () in
                        let _ = Graph.dijkstra graph_v 0 in
                        let n6 = Sys.time () in
@@ -42,10 +44,10 @@ let () =
                                 let _ = Graph.bellman list_topo graph_v graph_pred graph_succ 0 in 
                                 let n4 = Sys.time () in moy_bellman := !moy_bellman +. (n4 -. n3) )
                      done ;
-                     let _ = moy_bellman_ford := !moy_bellman_ford /. 50. in 
-                     let _ = moy_dijkstra := !moy_dijkstra /. 50. in
-                     let _ = moy_bellman := !moy_bellman /. 50. in 
-                       IO.output_ligne oc j !moy_bellman_ford !moy_dijkstra !moy_bellman ;
+                     moy_bellman_ford := !moy_bellman_ford /. 50. ;
+                     moy_dijkstra := !moy_dijkstra /. 50. ;
+                     moy_bellman := !moy_bellman /. 50. ;
+                     IO.output_ligne oc j !moy_bellman_ford !moy_dijkstra !moy_bellman ;
                    done ;
                    close_out oc ;
                    if Sys.command "gnuplot genere_cpu_courbe.gnu" = 0 
